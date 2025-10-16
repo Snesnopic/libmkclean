@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.6)
+project("mkclean" LANGUAGES C CXX)
+
+# CMake project placed at the root of the sources
+add_subdirectory("corec")
+add_subdirectory("libebml2")
+add_subdirectory("libmatroska2")
+add_subdirectory("mkclean")
