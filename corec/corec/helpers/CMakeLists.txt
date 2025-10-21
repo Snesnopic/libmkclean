@@ -1,5 +1,3 @@
-add_subdirectory("zlib")
-
 # File API
 set(corec_file_BASE_SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/file/bufstream.c
@@ -143,3 +141,4 @@ else(UNIX)
   target_sources("corec_charconvert" INTERFACE ${corec_charconvert_OTHER_SOURCES})
 endif(WIN32)
 target_link_libraries("corec_charconvert" INTERFACE "corec_bare")
+
