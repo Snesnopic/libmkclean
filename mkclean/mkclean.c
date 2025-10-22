@@ -89,8 +89,8 @@ void DebugMessage(const tchar_t* Msg,...)
 
 #if defined(LOGFILE)
 {
-    thread_local FILE* f=NULL;
-    thread_local char s8[1024];
+    THREAD_LOCAL FILE* f=NULL;
+    THREAD_LOCAL char s8[1024];
     size_t i;
     if (!f)
         f=fopen("\\corelog.txt","a+b");
@@ -152,16 +152,21 @@ static int GetProfileId(int Profile)
 	case PROFILE_MATROSKA_V4: return 6;
 	}
 }
+#if defined(_MSC_VER) && !defined(__cplusplus)
+#  define THREAD_LOCAL _Thread_local
+#else
+#  define THREAD_LOCAL thread_local
+#endif
 
-thread_local int DocVersion = 1;
-thread_local int SrcProfile = 0, DstProfile = 0;
-thread_local textwriter *StdErr = NULL;
-thread_local size_t ExtraSizeDiff = 0;
-thread_local bool_t Quiet = 0;
-thread_local bool_t Unsafe = 0;
-thread_local bool_t Live = 0;
-thread_local int TotalPhases = 2;
-thread_local int CurrentPhase = 1;
+THREAD_LOCAL int DocVersion = 1;
+THREAD_LOCAL int SrcProfile = 0, DstProfile = 0;
+THREAD_LOCAL textwriter *StdErr = NULL;
+THREAD_LOCAL size_t ExtraSizeDiff = 0;
+THREAD_LOCAL bool_t Quiet = 0;
+THREAD_LOCAL bool_t Unsafe = 0;
+THREAD_LOCAL bool_t Live = 0;
+THREAD_LOCAL int TotalPhases = 2;
+THREAD_LOCAL int CurrentPhase = 1;
 
 static bool_t MasterError(void *cookie, int type, const tchar_t *ClassName, const ebml_element *i)
 {
