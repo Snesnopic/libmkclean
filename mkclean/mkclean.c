@@ -152,10 +152,12 @@ static int GetProfileId(int Profile)
 	case PROFILE_MATROSKA_V4: return 6;
 	}
 }
-#if defined(_MSC_VER) && !defined(__cplusplus)
-#  define THREAD_LOCAL _Thread_local
-#else
+#if defined(__cplusplus)
 #  define THREAD_LOCAL thread_local
+#elif defined(_MSC_VER)
+#  define THREAD_LOCAL __declspec(thread)
+#else
+#  define THREAD_LOCAL _Thread_local
 #endif
 
 THREAD_LOCAL int DocVersion = 1;
