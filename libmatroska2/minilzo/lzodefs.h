@@ -657,6 +657,9 @@
 #elif defined(__amd64__) || defined(__x86_64__) || defined(_M_AMD64)
 #  define LZO_ARCH_AMD64            1
 #  define LZO_INFO_ARCH             "amd64"
+#elif defined(_M_ARM64) || defined(__aarch64__)
+#  define LZO_ARCH_ARM64            1
+#  define LZO_INFO_ARCH             "arm64"
 #elif defined(__thumb__) || (defined(_M_ARM) && defined(_M_THUMB))
 #  define LZO_ARCH_ARM              1
 #  define LZO_ARCH_ARM_THUMB        1
