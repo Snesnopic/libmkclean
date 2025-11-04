@@ -40,7 +40,7 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
-#if defined(TARGET_OSX)
+#if defined(TARGET_OSX) || defined(__FreeBSD__)
 #include <sys/mount.h>
 #else
 #include <sys/vfs.h>
