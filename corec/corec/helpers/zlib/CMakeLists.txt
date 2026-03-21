@@ -3,7 +3,7 @@
 option(CONFIG_ZLIB "Enable zlib (de)compression" ON)
 
 if (CONFIG_ZLIB)
-    add_library("zlib" STATIC)
+    add_library("zlib_mkclean" STATIC)
     set(zlib_group_PUBLIC_HEADERS
         crc32.h
         inffast.h
@@ -16,7 +16,7 @@ if (CONFIG_ZLIB)
         deflate.h
         trees.h
     )
-    target_compile_definitions(zlib PRIVATE NO_DUMMY_DECL=1)
+    target_compile_definitions(zlib_mkclean PRIVATE NO_DUMMY_DECL=1)
 
     set(zlib_group_SOURCES
         adler32.c
@@ -71,13 +71,13 @@ if (CONFIG_ZLIB)
     endif()
     endif()
     
-    target_compile_definitions("zlib" PRIVATE FASTEST NO_ERRNO_H)
+    target_compile_definitions("zlib_mkclean" PRIVATE FASTEST NO_ERRNO_H)
     # if(WIN32 && DYNAMIC BUILD)
     #     target_compile_definitions("zlib" ZLIB_DLL)
     # endif(WIN32)
-    target_sources("zlib" PRIVATE ${zlib_group_SOURCES} ${ZLIB_ASM_SOURCES} ${zlib_group_PUBLIC_HEADERS})
-    target_include_directories("zlib" PUBLIC ".")
-    set_target_properties("zlib" PROPERTIES 
+    target_sources("zlib_mkclean" PRIVATE ${zlib_group_SOURCES} ${ZLIB_ASM_SOURCES} ${zlib_group_PUBLIC_HEADERS})
+    target_include_directories("zlib_mkclean" PUBLIC ".")
+    set_target_properties("zlib_mkclean" PROPERTIES
         PUBLIC_HEADER "${zlib_group_PUBLIC_HEADERS}"
     )
 endif(CONFIG_ZLIB)
