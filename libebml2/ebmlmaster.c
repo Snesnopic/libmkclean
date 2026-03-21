@@ -175,7 +175,7 @@ void EBML_MasterErase(ebml_master *Element)
     	NodeTree_DetachAndRelease(Element->Base.Base.Children);
 }
 
-static bool_t IsDefaultValue(const ebml_element *Element)
+static bool_t IsDefaultValueMaster(const ebml_element *Element)
 {
     return 0;
     // TODO: a master element has the default value if all the sub elements are unique and have the default value
@@ -217,7 +217,7 @@ bool_t EBML_MasterCheckMandatory(const ebml_master *Element, bool_t bWithDefault
     return 1;
 }
 
-static bool_t NeedsDataSizeUpdate(ebml_element *Element, bool_t bWithDefault)
+static bool_t NeedsDataSizeUpdateMaster(ebml_element *Element, bool_t bWithDefault)
 {
     ebml_element *i;
     if (INHERITED(Element,ebml_element_vmt,EBML_MASTER_CLASS)->NeedsDataSizeUpdate(Element, bWithDefault))
@@ -231,7 +231,7 @@ static bool_t NeedsDataSizeUpdate(ebml_element *Element, bool_t bWithDefault)
     return 0;
 }
 
-static filepos_t UpdateDataSize(ebml_master *Element, bool_t bWithDefault, bool_t bForceWithoutMandatory)
+static filepos_t UpdateDataSizeMaster(ebml_master *Element, bool_t bWithDefault, bool_t bForceWithoutMandatory)
 {
     if (EBML_ElementNeedsDataSizeUpdate(Element, bWithDefault))
     {
@@ -279,7 +279,7 @@ void EBML_MasterAddMandatory(ebml_master *Element, bool_t SetDefault)
     }
 }
 
-static void PostCreate(ebml_master *Element, bool_t SetDefault)
+static void PostCreateMaster(ebml_master *Element, bool_t SetDefault)
 {
     INHERITED(Element,ebml_element_vmt,EBML_MASTER_CLASS)->PostCreate(Element, SetDefault);
     if (SetDefault)
@@ -289,7 +289,7 @@ static void PostCreate(ebml_master *Element, bool_t SetDefault)
     }
 }
 
-static err_t ReadData(ebml_master *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
+static err_t ReadDataMaster(ebml_master *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
 {
     int UpperEltFound = 0;
     bool_t bFirst = 1;
@@ -470,7 +470,7 @@ static err_t InternalRender(ebml_master *Element, stream *Output, bool_t bForceW
     return Err;
 }
 
-static err_t RenderData(ebml_master *Element, stream *Output, bool_t bForceWithoutMandatory, bool_t bWithDefault, filepos_t *Rendered)
+static err_t RenderDataMaster(ebml_master *Element, stream *Output, bool_t bForceWithoutMandatory, bool_t bWithDefault, filepos_t *Rendered)
 {
     filepos_t _Rendered;
     err_t Err = ERR_NONE;
@@ -557,7 +557,7 @@ static err_t RenderData(ebml_master *Element, stream *Output, bool_t bForceWitho
 }
 #endif
 
-static ebml_element *Copy(const ebml_master *Element, const void *Cookie)
+static ebml_element *CopyMaster(const ebml_master *Element, const void *Cookie)
 {
     ebml_element *i, *Elt;
     ebml_master *Result = (ebml_master*)EBML_ElementCreate(Element,Element->Base.Context,0,Cookie);
@@ -598,7 +598,7 @@ static void AddChild(ebml_master* p,ebml_element* Child,ebml_element* Before)
     INHERITED(p,nodetree_vmt,EBML_MASTER_CLASS)->AddChild(p,Child,Before);
 }
 
-static bool_t ValidateSize(const ebml_element *p)
+static bool_t ValidateSizeMaster(const ebml_element *p)
 {
     return 1;
 }
@@ -607,15 +607,15 @@ META_START(EBMLMaster_Class,EBML_MASTER_CLASS)
 META_CLASS(SIZE,sizeof(ebml_master))
 META_VMT(TYPE_FUNC,nodetree_vmt,AddChild,AddChild)
 META_VMT(TYPE_FUNC,nodetree_vmt,RemoveChild,RemoveChild)
-META_VMT(TYPE_FUNC,ebml_element_vmt,PostCreate,PostCreate)
-META_VMT(TYPE_FUNC,ebml_element_vmt,IsDefaultValue,IsDefaultValue)
-META_VMT(TYPE_FUNC,ebml_element_vmt,UpdateDataSize,UpdateDataSize)
-META_VMT(TYPE_FUNC,ebml_element_vmt,NeedsDataSizeUpdate,NeedsDataSizeUpdate)
-META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadData)
-META_VMT(TYPE_FUNC,ebml_element_vmt,Copy,Copy)
-META_VMT(TYPE_FUNC, ebml_element_vmt, ValidateSize, ValidateSize)
+META_VMT(TYPE_FUNC,ebml_element_vmt,PostCreate,PostCreateMaster)
+META_VMT(TYPE_FUNC,ebml_element_vmt,IsDefaultValue,IsDefaultValueMaster)
+META_VMT(TYPE_FUNC,ebml_element_vmt,UpdateDataSize,UpdateDataSizeMaster)
+META_VMT(TYPE_FUNC,ebml_element_vmt,NeedsDataSizeUpdate,NeedsDataSizeUpdateMaster)
+META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadDataMaster)
+META_VMT(TYPE_FUNC,ebml_element_vmt,Copy,CopyMaster)
+META_VMT(TYPE_FUNC, ebml_element_vmt, ValidateSize, ValidateSizeMaster)
 #if defined(CONFIG_EBML_WRITING)
-META_VMT(TYPE_FUNC,ebml_element_vmt,RenderData,RenderData)
+META_VMT(TYPE_FUNC,ebml_element_vmt,RenderData,RenderDataMaster)
 #endif
 META_END(EBML_ELEMENT_CLASS)
 

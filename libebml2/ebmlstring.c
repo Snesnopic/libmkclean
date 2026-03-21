@@ -65,7 +65,7 @@ void EBML_StringGet(ebml_string *Element,tchar_t *Out, size_t OutLen)
 	}
 }
 
-static err_t ReadData(ebml_string *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
+static err_t ReadDataString(ebml_string *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
 {
     err_t Result;
     char *Buffer = NULL;
@@ -101,7 +101,7 @@ failed:
 }
 
 #if defined(CONFIG_EBML_WRITING)
-static err_t RenderData(ebml_string *Element, stream *Output, bool_t bForceWithoutMandatory, bool_t bWithDefault, filepos_t *Rendered)
+static err_t RenderDataString(ebml_string *Element, stream *Output, bool_t bForceWithoutMandatory, bool_t bWithDefault, filepos_t *Rendered)
 {
     size_t Written;
     err_t Err = Stream_Write(Output,Element->Buffer,(size_t)Element->Base.DataSize,&Written);
@@ -152,13 +152,13 @@ err_t EBML_UnicodeStringRead(ebml_string *Element, stream *Input, tchar_t *Out, 
 }
 #endif
 
-static void Delete(ebml_string *p)
+static void DeleteString(ebml_string *p)
 {
     if (p->Buffer)
         free((char*)p->Buffer);
 }
 
-static filepos_t UpdateDataSize(ebml_string *Element, bool_t bWithDefault, bool_t bForceWithoutMandatory)
+static filepos_t UpdateDataSizeString(ebml_string *Element, bool_t bWithDefault, bool_t bForceWithoutMandatory)
 {
     if (EBML_ElementNeedsDataSizeUpdate(Element, bWithDefault))
         Element->Base.DataSize = strlen(Element->Buffer);
@@ -174,7 +174,7 @@ static filepos_t UpdateDataSizeUni(ebml_string *Element, bool_t bWithDefault, bo
 	return INHERITED(Element,ebml_element_vmt,EBML_UNISTRING_CLASS)->UpdateDataSize(Element, bWithDefault, bForceWithoutMandatory);
 }
 
-static bool_t IsDefaultValue(const ebml_string *Element)
+static bool_t IsDefaultValueString(const ebml_string *Element)
 {
     return Element->Base.Context->HasDefault && (!Element->Base.bValueIsSet || strcmp(Element->Buffer,(const char*)Element->Base.Context->DefaultValue)==0);
 }
@@ -193,7 +193,7 @@ static void PostCreateUniString(ebml_element *Element, bool_t SetDefault)
         EBML_StringSetValue((ebml_string*)Element, (const char *)Element->Context->DefaultValue);
 }
 
-static ebml_string *Copy(const ebml_string *Element, const void *Cookie)
+static ebml_string *CopyString(const ebml_string *Element, const void *Cookie)
 {
     ebml_string *Result = (ebml_string*)EBML_ElementCreate(Element,Element->Base.Context,0,Cookie);
     if (Result)
@@ -212,26 +212,26 @@ static ebml_string *Copy(const ebml_string *Element, const void *Cookie)
 
 META_START(EBMLString_Class,EBML_STRING_CLASS)
 META_CLASS(SIZE,sizeof(ebml_string))
-META_CLASS(DELETE,Delete)
-META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadData)
-META_VMT(TYPE_FUNC,ebml_element_vmt,IsDefaultValue,IsDefaultValue)
-META_VMT(TYPE_FUNC,ebml_element_vmt,UpdateDataSize,UpdateDataSize)
+META_CLASS(DELETE,DeleteString)
+META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadDataString)
+META_VMT(TYPE_FUNC,ebml_element_vmt,IsDefaultValue,IsDefaultValueString)
+META_VMT(TYPE_FUNC,ebml_element_vmt,UpdateDataSize,UpdateDataSizeString)
 #if defined(CONFIG_EBML_WRITING)
-META_VMT(TYPE_FUNC,ebml_element_vmt,RenderData,RenderData)
+META_VMT(TYPE_FUNC,ebml_element_vmt,RenderData,RenderDataString)
 #endif
 META_VMT(TYPE_FUNC,ebml_element_vmt,PostCreate,PostCreateString)
-META_VMT(TYPE_FUNC,ebml_element_vmt,Copy,Copy)
+META_VMT(TYPE_FUNC,ebml_element_vmt,Copy,CopyString)
 META_END_CONTINUE(EBML_ELEMENT_CLASS)
 
 META_START_CONTINUE(EBML_UNISTRING_CLASS)
 META_CLASS(SIZE,sizeof(ebml_string))
-META_CLASS(DELETE,Delete)
-META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadData)
-META_VMT(TYPE_FUNC,ebml_element_vmt,IsDefaultValue,IsDefaultValue)
+META_CLASS(DELETE,DeleteString)
+META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadDataString)
+META_VMT(TYPE_FUNC,ebml_element_vmt,IsDefaultValue,IsDefaultValueString)
 META_VMT(TYPE_FUNC,ebml_element_vmt,UpdateDataSize,UpdateDataSizeUni)
 #if defined(CONFIG_EBML_WRITING)
-META_VMT(TYPE_FUNC,ebml_element_vmt,RenderData,RenderData)
+META_VMT(TYPE_FUNC,ebml_element_vmt,RenderData,RenderDataString)
 #endif
 META_VMT(TYPE_FUNC,ebml_element_vmt,PostCreate,PostCreateUniString)
-META_VMT(TYPE_FUNC,ebml_element_vmt,Copy,Copy)
+META_VMT(TYPE_FUNC,ebml_element_vmt,Copy,CopyString)
 META_END(EBML_ELEMENT_CLASS)

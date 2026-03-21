@@ -44,12 +44,12 @@ err_t EBML_DateSetDateTime(ebml_date *Element, datetime_t Date)
     return ERR_NONE;
 }
 
-static bool_t ValidateSize(const ebml_element *p)
+static bool_t ValidateSizeDate(const ebml_element *p)
 {
     return EBML_ElementIsFiniteSize(p) && (p->DataSize == 8 || p->DataSize == 0);
 }
 
-static err_t ReadData(ebml_date *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
+static err_t ReadDataDate(ebml_date *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
 {
     err_t Result;
     int DataSize;
@@ -92,6 +92,6 @@ static void PostCreate(ebml_date *Element, bool_t SetDefault)
 
 META_START(EBMLDate_Class,EBML_DATE_CLASS)
 META_VMT(TYPE_FUNC,ebml_element_vmt,PostCreate,PostCreate)
-META_VMT(TYPE_FUNC,ebml_element_vmt,ValidateSize,ValidateSize)
-META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadData)
+META_VMT(TYPE_FUNC,ebml_element_vmt,ValidateSize,ValidateSizeDate)
+META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadDataDate)
 META_END(EBML_SINTEGER_CLASS)

@@ -28,12 +28,12 @@
 #include "ebml2/ebml.h"
 #include "internal.h"
 
-static bool_t ValidateSize(const ebml_element *p)
+static bool_t ValidateSizeElement(const ebml_element *p)
 {
     return EBML_ElementIsFiniteSize(p); /* not allowed outside of master elements */
 }
 
-static void PostCreate(ebml_element *Element, bool_t SetDefault)
+static void PostCreateElement(ebml_element *Element, bool_t SetDefault)
 {
     Element->DefaultSize = -1;
     Element->ElementPosition = INVALID_FILEPOS_T;
@@ -50,7 +50,7 @@ static bool_t NeedsDataSizeUpdate(ebml_element *Element, bool_t bWithDefault)
     return 1;
 }
 
-static filepos_t UpdateDataSize(ebml_element *Element, bool_t bWithDefault, bool_t bForceWithoutMandatory)
+static filepos_t UpdateDataSizeElement(ebml_element *Element, bool_t bWithDefault, bool_t bForceWithoutMandatory)
 {
 	if (!bWithDefault && EBML_ElementIsDefaultValue(Element))
 		return 0;
@@ -65,7 +65,7 @@ static filepos_t UpdateDataSize(ebml_element *Element, bool_t bWithDefault, bool
     return Element->DataSize;
 }
 
-static err_t Create(ebml_element *Element)
+static err_t ElementCreate(ebml_element *Element)
 {
     Element->DataSize = INVALID_FILEPOS_T;
     Element->bNeedDataSizeUpdate = 1;
@@ -76,10 +76,10 @@ META_START(EBMLElement_Class,EBML_ELEMENT_CLASS)
 META_CLASS(SIZE,sizeof(ebml_element))
 META_CLASS(VMT_SIZE,sizeof(ebml_element_vmt))
 META_CLASS(FLAGS,CFLAG_ABSTRACT)
-META_CLASS(CREATE,Create)
-META_VMT(TYPE_FUNC,ebml_element_vmt,PostCreate,PostCreate)
-META_VMT(TYPE_FUNC,ebml_element_vmt,ValidateSize,ValidateSize)
-META_VMT(TYPE_FUNC,ebml_element_vmt,UpdateDataSize,UpdateDataSize)
+META_CLASS(CREATE,ElementCreate)
+META_VMT(TYPE_FUNC,ebml_element_vmt,PostCreate,PostCreateElement)
+META_VMT(TYPE_FUNC,ebml_element_vmt,ValidateSize,ValidateSizeElement)
+META_VMT(TYPE_FUNC,ebml_element_vmt,UpdateDataSize,UpdateDataSizeElement)
 META_VMT(TYPE_FUNC,ebml_element_vmt,NeedsDataSizeUpdate,NeedsDataSizeUpdate)
 
 META_PARAM(TYPE,EBML_ELEMENT_INFINITESIZE,TYPE_BOOLEAN)

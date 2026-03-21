@@ -108,7 +108,7 @@ static err_t Open(filestream* p, const tchar_t* URL, int Flags)
 	return ERR_NONE;
 }
 
-static err_t Read(filestream* p,void* Data,size_t Size,size_t* Readed)
+static err_t Read_Filestream(filestream* p,void* Data,size_t Size,size_t* Readed)
 {
     err_t Err;
     int n = read(p->fd, Data, (unsigned int)Size);
@@ -127,10 +127,10 @@ static err_t Read(filestream* p,void* Data,size_t Size,size_t* Readed)
 
 static err_t ReadBlock(filestream* p,block* Block,size_t Ofs,size_t Size,size_t* Readed)
 {
-	return Read(p,(void*)(Block->Ptr+Ofs),Size,Readed);
+	return Read_Filestream(p,(void*)(Block->Ptr+Ofs),Size,Readed);
 }
 
-static err_t Write(filestream* p,const void* Data,size_t Size,size_t* Written)
+static err_t Write_Filestream(filestream* p,const void* Data,size_t Size,size_t* Written)
 {
     err_t Err;
 	int n = write(p->fd, Data, (unsigned int)Size);
@@ -257,9 +257,9 @@ META_CLASS(SIZE,sizeof(filestream))
 META_CLASS(PRIORITY,PRI_MINIMUM)
 META_CLASS(DELETE,Delete)
 META_VMT(TYPE_FUNC,stream_vmt,Open,Open)
-META_VMT(TYPE_FUNC,stream_vmt,Read,Read)
+META_VMT(TYPE_FUNC,stream_vmt,Read,Read_Filestream)
 META_VMT(TYPE_FUNC,stream_vmt,ReadBlock,ReadBlock)
-META_VMT(TYPE_FUNC,stream_vmt,Write,Write)
+META_VMT(TYPE_FUNC,stream_vmt,Write,Write_Filestream)
 META_VMT(TYPE_FUNC,stream_vmt,Seek,Seek)
 META_VMT(TYPE_FUNC,stream_vmt,OpenDir,OpenDir)
 META_VMT(TYPE_FUNC,stream_vmt,EnumDir,EnumDir)

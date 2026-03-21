@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.6)
+cmake_minimum_required(VERSION 3.6...4.10)
 project("mkclean" LANGUAGES C CXX)
 
 # CMake project placed at the root of the sources

@@ -155,12 +155,12 @@ const uint32_t m_tab[] = {
 # define CRC32_SHIFTED(c) (c >> 8)
 #endif
 
-static bool_t ValidateSize(const ebml_element *p)
+static bool_t ValidateSizeCrc(const ebml_element *p)
 {
     return EBML_ElementIsFiniteSize(p) && (p->DataSize == 4);
 }
 
-static err_t ReadData(ebml_crc *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
+static err_t ReadDataCrc(ebml_crc *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
 {
     err_t Result;
     uint32_t CRCbuffer;
@@ -174,7 +174,7 @@ static err_t ReadData(ebml_crc *Element, stream *Input, const ebml_parser_contex
 }
 
 #if defined(CONFIG_EBML_WRITING)
-static err_t RenderData(ebml_crc *Element, stream *Output, bool_t bForceWithoutMandatory, bool_t bWithDefault, filepos_t *Rendered)
+static err_t RenderDataCrc(ebml_crc *Element, stream *Output, bool_t bForceWithoutMandatory, bool_t bWithDefault, filepos_t *Rendered)
 {
     err_t Result;
     size_t Written = 0;
@@ -187,7 +187,7 @@ static err_t RenderData(ebml_crc *Element, stream *Output, bool_t bForceWithoutM
 }
 #endif
 
-static ebml_crc *Copy(const ebml_crc *Element, const void *Cookie)
+static ebml_crc *CopyCrc(const ebml_crc *Element, const void *Cookie)
 {
     ebml_crc *Result = (ebml_crc*)EBML_ElementCreate(Element,Element->Base.Context,0,Cookie);
     if (Result)
@@ -204,7 +204,7 @@ static ebml_crc *Copy(const ebml_crc *Element, const void *Cookie)
     return Result;
 }
 
-static bool_t IsDefaultValue(const ebml_element *Element)
+static bool_t IsDefaultValueCrc(const ebml_element *Element)
 {
     return 0; // CRC has no default value
 }
@@ -220,12 +220,12 @@ static err_t Create(ebml_crc *Element)
 META_START(EBMLCRC_Class,EBML_CRC_CLASS)
 META_CLASS(SIZE,sizeof(ebml_crc))
 META_CLASS(CREATE,Create)
-META_VMT(TYPE_FUNC,ebml_element_vmt,ValidateSize,ValidateSize)
-META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadData)
-META_VMT(TYPE_FUNC,ebml_element_vmt,Copy,Copy)
-META_VMT(TYPE_FUNC,ebml_element_vmt,IsDefaultValue,IsDefaultValue)
+META_VMT(TYPE_FUNC,ebml_element_vmt,ValidateSize,ValidateSizeCrc)
+META_VMT(TYPE_FUNC,ebml_element_vmt,ReadData,ReadDataCrc)
+META_VMT(TYPE_FUNC,ebml_element_vmt,Copy,CopyCrc)
+META_VMT(TYPE_FUNC,ebml_element_vmt,IsDefaultValue,IsDefaultValueCrc)
 #if defined(CONFIG_EBML_WRITING)
-META_VMT(TYPE_FUNC,ebml_element_vmt,RenderData,RenderData)
+META_VMT(TYPE_FUNC,ebml_element_vmt,RenderData,RenderDataCrc)
 #endif
 META_END(EBML_ELEMENT_CLASS)
 
