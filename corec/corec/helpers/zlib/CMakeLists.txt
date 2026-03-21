@@ -16,6 +16,8 @@ if (CONFIG_ZLIB)
         deflate.h
         trees.h
     )
+    target_compile_definitions(zlib PRIVATE NO_DUMMY_DECL=1)
+
     set(zlib_group_SOURCES
         adler32.c
         crc32.c
