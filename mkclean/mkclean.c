@@ -104,6 +104,19 @@ void DebugMessage(const tchar_t* Msg,...)
 }
 #endif
 
+#if defined(_MSC_VER)
+#define THREAD_LOCAL __declspec(thread)
+#elif defined(__APPLE__)
+// macOS Clang does NOT support C11 TLS, only __thread
+#define THREAD_LOCAL __thread
+#elif defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+// C11-compliant compilers (GCC/Clang on Linux)
+#define THREAD_LOCAL _Thread_local
+#else
+// Fallback for older GCC/Clang
+#define THREAD_LOCAL __thread
+#endif
+
 #define EXTRA_SEEK_SPACE       22
 #define MARKER3D         (block_info*)1
 
@@ -153,15 +166,15 @@ static int GetProfileId(int Profile)
 	}
 }
 
-thread_local int DocVersion = 1;
-thread_local int SrcProfile = 0, DstProfile = 0;
-thread_local textwriter *StdErr = NULL;
-thread_local size_t ExtraSizeDiff = 0;
-thread_local bool_t Quiet = 0;
-thread_local bool_t Unsafe = 0;
-thread_local bool_t Live = 0;
-thread_local int TotalPhases = 2;
-thread_local int CurrentPhase = 1;
+THREAD_LOCAL int DocVersion = 1;
+THREAD_LOCAL int SrcProfile = 0, DstProfile = 0;
+THREAD_LOCAL textwriter *StdErr = NULL;
+THREAD_LOCAL size_t ExtraSizeDiff = 0;
+THREAD_LOCAL bool_t Quiet = 0;
+THREAD_LOCAL bool_t Unsafe = 0;
+THREAD_LOCAL bool_t Live = 0;
+THREAD_LOCAL int TotalPhases = 2;
+THREAD_LOCAL int CurrentPhase = 1;
 
 static bool_t MasterError(void *cookie, int type, const tchar_t *ClassName, const ebml_element *i)
 {

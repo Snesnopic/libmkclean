@@ -1,8 +1,6 @@
-project("mkclean" VERSION 0.9.0 LANGUAGES C CXX)
+project("mkclean" VERSION 0.9.0 LANGUAGES CXX)
 
 add_library("mkclean_lib" STATIC mkclean.c)
-
-set_property(TARGET mkclean_lib PROPERTY C_STANDARD 23)
 
 configure_file(mkclean_project.h.in mkclean_project.h)
 target_include_directories("mkclean_lib" PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
