@@ -1,9 +1,5 @@
 cmake_minimum_required(VERSION 3.6...4.10)
-project("mkclean" LANGUAGES C)
-
-# compiler flags based on original meson setup
-set(CMAKE_C_STANDARD 11)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+project("mkclean" LANGUAGES C CXX)
 
 # CMake project placed at the root of the sources
 add_subdirectory("corec")
