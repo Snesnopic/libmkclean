@@ -29,7 +29,7 @@
 
 #include "node.h"
 
-static NOINLINE err_t SetParent(nodetree* p,nodetree* Parent,nodetree* Before)
+static NOINLINE err_t SetParentNodeTree(nodetree* p,nodetree* Parent,nodetree* Before)
 {
     err_t Result = ERR_NONE;
 
@@ -60,7 +60,7 @@ void NodeTree_Clear(nodetree* p)
 	while (p->Children)
     	NodeTree_DetachAndRelease(p->Children);
 
-	SetParent(p,NULL,NULL);
+	SetParentNodeTree(p,NULL,NULL);
 }
 
 static err_t AddChild(nodetree* p,nodetree* Child, nodetree* Before)
@@ -193,7 +193,7 @@ META_DATA_RDONLY(TYPE_NODE,NODETREE_PARENT,nodetree,Parent)
 META_PARAM(NAME,NODETREE_NEXT,T("Next"))
 META_PARAM(TYPE,NODETREE_NEXT,TYPE_NODE|TFLAG_DEFAULT|TFLAG_RDONLY)
 META_DATA_RDONLY(TYPE_NODE,NODETREE_NEXT,nodetree,Next)
-META_VMT(TYPE_FUNC,nodetree_vmt,SetParent,SetParent)
+META_VMT(TYPE_FUNC,nodetree_vmt,SetParent,SetParentNodeTree)
 META_VMT(TYPE_FUNC,nodetree_vmt,AddChild,AddChild)
 META_VMT(TYPE_FUNC,nodetree_vmt,RemoveChild,RemoveChild)
 META_VMT(TYPE_FUNC,nodetree_vmt,AddData,AddData)
