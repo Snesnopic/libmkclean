@@ -142,7 +142,7 @@ static err_t Open(filestream* p, const tchar_t* URL, int Flags)
 	return ERR_NONE;
 }
 
-static err_t Read(filestream* p,void* Data,size_t Size,size_t* Readed)
+static err_t ReadFilestream(filestream* p,void* Data,size_t Size,size_t* Readed)
 {
     err_t Err;
 	DWORD n;
@@ -175,7 +175,7 @@ static err_t Read(filestream* p,void* Data,size_t Size,size_t* Readed)
 
 static err_t ReadBlock(filestream* p,block* Block,size_t Ofs,size_t Size,size_t* Readed)
 {
-	return Read(p,(void*)(Block->Ptr+Ofs),Size,Readed);
+	return ReadFilestream(p,(void*)(Block->Ptr+Ofs),Size,Readed);
 }
 
 static filepos_t Seek(filestream* p,filepos_t Pos,int SeekMode)
@@ -216,7 +216,7 @@ static filepos_t Seek(filestream* p,filepos_t Pos,int SeekMode)
 	return Result;
 }
 
-static err_t Write(filestream* p,const void* Data,size_t Size,size_t* Written)
+static err_t WriteFilestream(filestream* p,const void* Data,size_t Size,size_t* Written)
 {
 	DWORD n;
     err_t Err;
@@ -387,9 +387,9 @@ META_CLASS(SIZE,sizeof(filestream))
 META_CLASS(PRIORITY,PRI_MINIMUM)
 META_CLASS(DELETE,Delete)
 META_VMT(TYPE_FUNC,stream_vmt,Open,Open)
-META_VMT(TYPE_FUNC,stream_vmt,Read,Read)
+META_VMT(TYPE_FUNC,stream_vmt,Read,ReadFilestream)
 META_VMT(TYPE_FUNC,stream_vmt,ReadBlock,ReadBlock)
-META_VMT(TYPE_FUNC,stream_vmt,Write,Write)
+META_VMT(TYPE_FUNC,stream_vmt,Write,WriteFilestream)
 META_VMT(TYPE_FUNC,stream_vmt,Seek,Seek)
 META_VMT(TYPE_FUNC,stream_vmt,OpenDir,OpenDir)
 META_VMT(TYPE_FUNC,stream_vmt,EnumDir,EnumDir)
