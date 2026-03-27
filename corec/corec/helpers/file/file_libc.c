@@ -40,10 +40,13 @@
 #include <unistd.h>
 #include <dirent.h>
 #include <errno.h>
-#if defined(TARGET_OSX)
-#include <sys/mount.h>
+#if defined(__linux__)
+	#include <sys/vfs.h>      // Linux
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+	#include <sys/param.h>
+	#include <sys/mount.h>    // BSD + macOS
 #else
-#include <sys/vfs.h>
+	#error "Unsupported platform"
 #endif
 
 #if defined(O_ACCMODE)
@@ -390,10 +393,10 @@ int64_t GetPathFreeSpace(nodecontext* UNUSED_PARAM(p), const tchar_t* Path)
 {
 #ifndef TODO
     // need to an include (see at includes)
-    struct statfs st;
-    if (statfs(Path, &st) < 0)
-    	return -1;
-    return (int64_t)st.f_bsize * (int64_t)st.f_bavail;
+	struct statfs st;
+	if (statfs(Path, &st) != 0)
+		return -1;
+	return (int64_t)st.f_bsize * (int64_t)st.f_bavail;
 #else
     return -1;
 #endif
