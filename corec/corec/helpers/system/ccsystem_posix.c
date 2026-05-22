@@ -32,6 +32,10 @@
 
 #include <stdlib.h>
 
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#endif
+
 int RunCommand(anynode *p, const tchar_t *Cmd, const tchar_t *CmdParams, bool_t Silent)
 {
     char Command[2048];
@@ -44,5 +48,10 @@ int RunCommand(anynode *p, const tchar_t *Cmd, const tchar_t *CmdParams, bool_t 
         if (Silent)
             strcat(Command," > /dev/null 2>/dev/null");
     }
+#if defined(__APPLE__) && (TARGET_OS_IOS || TARGET_OS_TV || TARGET_OS_WATCH || TARGET_OS_SIMULATOR || TARGET_OS_VISION)
+    // system() is unavailable on iOS, tvOS, watchOS and visionOS
+    return -1;
+#else
     return system(Command);
+#endif
 }
