@@ -149,16 +149,14 @@ filepos_t EBML_ReadCodedSizeValue(const uint8_t *InBuffer, size_t *BufferSize, f
 			for (SizeIdx = 0; SizeIdx < PossibleSizeLength; SizeIdx++) {
 				PossibleSize[SizeIdx] = InBuffer[SizeIdx];
 			}
-			for (SizeIdx = 0; SizeIdx < PossibleSizeLength - 1; SizeIdx++) {
-				Result <<= 7;
-				Result |= 0xFF;
-			}
 
-			Result = 0;
-			Result |= PossibleSize[0] & ~SizeBitMask;
-			for (i = 1; i<PossibleSizeLength; i++) {
-				Result <<= 8;
-				Result |= PossibleSize[i];
+			{
+				uint64_t UResult = PossibleSize[0] & ~SizeBitMask;
+				for (i = 1; i<PossibleSizeLength; i++) {
+					UResult <<= 8;
+					UResult |= PossibleSize[i];
+				}
+				Result = (filepos_t)UResult;
 			}
 
 			*BufferSize = PossibleSizeLength;

@@ -35,6 +35,8 @@ static err_t ReadDataInt(ebml_integer *Element, stream *Input, const ebml_parser
     int i;
 
     assert(Element->Base.DataSize <= 8);
+    if (Element->Base.DataSize > 8)
+        return ERR_INVALID_DATA;
 
     Element->Base.bValueIsSet = 0;
 
@@ -51,12 +53,15 @@ static err_t ReadDataInt(ebml_integer *Element, stream *Input, const ebml_parser
     if (Result != ERR_NONE)
         return Result;
 
-    Element->Value = 0;
-	for (i=0; i<(int)Element->Base.DataSize; i++)
-	{
-		Element->Value <<= 8;
-		Element->Value |= (uint8_t)Buffer[i];
-	}
+    {
+        uint64_t Value = 0;
+        for (i=0; i<(int)Element->Base.DataSize; i++)
+        {
+            Value <<= 8;
+            Value |= (uint8_t)Buffer[i];
+        }
+        Element->Value = (int64_t)Value;
+    }
     Element->Base.bValueIsSet = 1;
 failed:
     return Result;
@@ -69,6 +74,8 @@ static err_t ReadDataSignedInt(ebml_integer *Element, stream *Input, const ebml_
     int i;
 
     assert(Element->Base.DataSize <= 8);
+    if (Element->Base.DataSize > 8)
+        return ERR_INVALID_DATA;
 
     Element->Base.bValueIsSet = 0;
 
@@ -85,15 +92,15 @@ static err_t ReadDataSignedInt(ebml_integer *Element, stream *Input, const ebml_
     if (Result != ERR_NONE)
         goto failed;
 
-    if (Buffer[0] & 0x80) // check wether it's a positive or negative value
-        Element->Value = -1;
-    else
-        Element->Value = 0;
-	for (i=0; i<(int)Element->Base.DataSize; i++)
-	{
-		Element->Value <<= 8;
-		Element->Value |= Buffer[i];
-	}
+    {
+        uint64_t Value = (Buffer[0] & 0x80) ? ~(uint64_t)0 : 0; // sign-extend if negative
+        for (i=0; i<(int)Element->Base.DataSize; i++)
+        {
+            Value <<= 8;
+            Value |= (uint8_t)Buffer[i];
+        }
+        Element->Value = (int64_t)Value;
+    }
     Element->Base.bValueIsSet = 1;
 failed:
     return Result;

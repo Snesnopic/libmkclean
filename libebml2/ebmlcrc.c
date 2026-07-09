@@ -27,6 +27,7 @@
  */
 #include "ebml2/ebml.h"
 #include "internal.h"
+#include <string.h>
 
 struct ebml_crc
 {
@@ -241,7 +242,9 @@ bool_t EBML_CRCMatches(ebml_crc *CRC, const uint8_t *Buf, size_t Size)
 */
 	while (Size >= 4)
 	{
-		testCRC ^= *(const uint32_t *)Buf;
+		uint32_t word;
+		memcpy(&word, Buf, sizeof(word));
+		testCRC ^= word;
 		testCRC = m_tab[CRC32_INDEX(testCRC)] ^ CRC32_SHIFTED(testCRC);
 		testCRC = m_tab[CRC32_INDEX(testCRC)] ^ CRC32_SHIFTED(testCRC);
 		testCRC = m_tab[CRC32_INDEX(testCRC)] ^ CRC32_SHIFTED(testCRC);
@@ -262,7 +265,9 @@ void EBML_CRCAddBuffer(ebml_crc *CRC, const uint8_t *Buf, size_t Size)
 {
 	while (Size >= 4)
 	{
-		CRC->CRC ^= *(const uint32_t *)Buf;
+		uint32_t word;
+		memcpy(&word, Buf, sizeof(word));
+		CRC->CRC ^= word;
 		CRC->CRC = m_tab[CRC32_INDEX(CRC->CRC)] ^ CRC32_SHIFTED(CRC->CRC);
 		CRC->CRC = m_tab[CRC32_INDEX(CRC->CRC)] ^ CRC32_SHIFTED(CRC->CRC);
 		CRC->CRC = m_tab[CRC32_INDEX(CRC->CRC)] ^ CRC32_SHIFTED(CRC->CRC);
