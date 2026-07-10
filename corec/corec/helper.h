@@ -90,12 +90,12 @@
 #else
 #define LOAD16LE(ptr)		((uint16_t)((LOAD8(ptr,1)<<8)|LOAD8(ptr,0)))
 #define LOAD16BE(ptr)		((uint16_t)((LOAD8(ptr,0)<<8)|LOAD8(ptr,1)))
-#define LOAD32LE(ptr)		((LOAD8(ptr,3)<<24)|(LOAD8(ptr,2)<<16)|(LOAD8(ptr,1)<<8)|LOAD8(ptr,0))
-#define LOAD32BE(ptr)		((LOAD8(ptr,0)<<24)|(LOAD8(ptr,1)<<16)|(LOAD8(ptr,2)<<8)|LOAD8(ptr,3))
+#define LOAD32LE(ptr)		(((uint32_t)LOAD8(ptr,3)<<24)|((uint32_t)LOAD8(ptr,2)<<16)|((uint32_t)LOAD8(ptr,1)<<8)|(uint32_t)LOAD8(ptr,0))
+#define LOAD32BE(ptr)		(((uint32_t)LOAD8(ptr,0)<<24)|((uint32_t)LOAD8(ptr,1)<<16)|((uint32_t)LOAD8(ptr,2)<<8)|(uint32_t)LOAD8(ptr,3))
 #define LOAD64LE(ptr)		((((uint64_t)LOAD8(ptr,0))    )|(((uint64_t)LOAD8(ptr,1))<< 8)|(((uint64_t)LOAD8(ptr,2))<<16)|(((uint64_t)LOAD8(ptr,3))<<24)| \
-							 (((uint64_t)LOAD8(ptr,4))<<32)|(((uint64_t)LOAD8(ptr,5))<<40)|(((uint64_t)LOAD8(ptr,6))<<48)|(((uint64_t)LOAD8(ptr,0))<<56))
+							 (((uint64_t)LOAD8(ptr,4))<<32)|(((uint64_t)LOAD8(ptr,5))<<40)|(((uint64_t)LOAD8(ptr,6))<<48)|(((uint64_t)LOAD8(ptr,7))<<56))
 #define LOAD64BE(ptr)		((((uint64_t)LOAD8(ptr,0))<<56)|(((uint64_t)LOAD8(ptr,1))<<48)|(((uint64_t)LOAD8(ptr,2))<<40)|(((uint64_t)LOAD8(ptr,3))<<32)| \
-							 (((uint64_t)LOAD8(ptr,4))<<24)|(((uint64_t)LOAD8(ptr,5))<<16)|(((uint64_t)LOAD8(ptr,6))<< 8)|(((uint64_t)LOAD8(ptr,0))    ))
+							 (((uint64_t)LOAD8(ptr,4))<<24)|(((uint64_t)LOAD8(ptr,5))<<16)|(((uint64_t)LOAD8(ptr,6))<< 8)|(((uint64_t)LOAD8(ptr,7))    ))
 #endif
 
 
