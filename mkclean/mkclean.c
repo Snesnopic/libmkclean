@@ -161,6 +161,7 @@ static int GetProfileId(int Profile)
 #endif
 
 THREAD_LOCAL int DocVersion = 1;
+THREAD_LOCAL int SrcReadVersion = 1;
 THREAD_LOCAL int SrcProfile = 0, DstProfile = 0;
 THREAD_LOCAL textwriter *StdErr = NULL;
 THREAD_LOCAL size_t ExtraSizeDiff = 0;
@@ -648,11 +649,26 @@ static ebml_element *CheckMatroskaHead(const ebml_element *Head, const ebml_pars
             // the profile/feature detection below (and everything that flows
             // from it, including whether elements like CodecDelay/SeekPreRoll
             // survive EBML_MasterCheckContext's profile filtering) needs the
-            // source's actual DocTypeVersion. DocTypeReadVersion is only the
-            // minimum a parser needs to read the file and is frequently lower
-            // -- reading it here previously understated the profile the
-            // source's own content actually used, silently dropping elements
-            // that were valid for it.
+            // source's actual DocTypeVersion -- the ceiling of features the
+            // file may use. DocTypeReadVersion (handled separately below) is
+            // a different, unrelated number: the minimum a parser needs to
+            // even read the file, and is frequently lower. This element was
+            // previously not read here, defaulting DocVersion to 1 and
+            // understating the profile the source's own content actually
+            // used, silently dropping elements that were valid for it. It
+            // isn't itself a parser-capability gate, so unlike
+            // DocTypeReadVersion below, an unrecognized value here doesn't
+            // abort parsing.
+            if (EBML_ElementReadData(SubElement,Input,NULL,0,SCOPE_ALL_DATA,0)!=ERR_NONE)
+            {
+                TextPrintf(StdErr,T("Error reading\r\n"));
+                break;
+            }
+            else
+                DocVersion = (int)EBML_IntegerValue((ebml_integer*)SubElement);
+        }
+        else if (EBML_ElementIsType(SubElement, EBML_getContextDocTypeReadVersion()))
+        {
             if (EBML_ElementReadData(SubElement,Input,NULL,0,SCOPE_ALL_DATA,0)!=ERR_NONE)
             {
                 TextPrintf(StdErr,T("Error reading\r\n"));
@@ -660,11 +676,11 @@ static ebml_element *CheckMatroskaHead(const ebml_element *Head, const ebml_pars
             }
             else if (EBML_IntegerValue((ebml_integer*)SubElement) > MATROSKA_VERSION)
             {
-                TextPrintf(StdErr,T("EBML version %") TPRId64 T(" not supported\r\n"),EBML_IntegerValue((ebml_integer*)SubElement));
+                TextPrintf(StdErr,T("EBML Read version %") TPRId64 T(" not supported\r\n"),EBML_IntegerValue((ebml_integer*)SubElement));
                 break;
             }
             else
-                DocVersion = (int)EBML_IntegerValue((ebml_integer*)SubElement);
+                SrcReadVersion = (int)EBML_IntegerValue((ebml_integer*)SubElement);
         }
         else if (EBML_ElementIsType(SubElement, MATROSKA_getContextSegment()))
             return SubElement;
@@ -1886,12 +1902,18 @@ int mkclean_optimize(int argc, const char *argv[])
     assert(Node_IsPartOf(RLevel1,EBML_INTEGER_CLASS));
     EBML_IntegerSetValue((ebml_integer*)RLevel1, DocVersion);
 
-    // Doctype readable version
+    // Doctype readable version. DstProfile==SrcProfile means nothing here
+    // raised the profile beyond what the source itself already needed (no
+    // --doctype override, no StereoMode-driven upgrade in CleanTracks), so
+    // the source's own, usually lower, read requirement still holds and old
+    // parsers that could open the source can still open this output.
+    // Otherwise something in the output now genuinely needs the higher
+    // profile to be understood, so fall back to requiring it in full.
     RLevel1 = (ebml_master*)EBML_MasterGetChild(EbmlHead,EBML_getContextDocTypeReadVersion());
     if (!RLevel1)
         goto exit;
     assert(Node_IsPartOf(RLevel1,EBML_INTEGER_CLASS));
-    EBML_IntegerSetValue((ebml_integer*)RLevel1, DocVersion);
+    EBML_IntegerSetValue((ebml_integer*)RLevel1, DstProfile==SrcProfile ? SrcReadVersion : DocVersion);
 
     if (EBML_ElementRender((ebml_element*)EbmlHead,Output,1,0,1,NULL)!=ERR_NONE)
         goto exit;
