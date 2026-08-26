@@ -31,6 +31,9 @@
 #include "corec/helpers/parser/parser.h"
 
 #include <stdlib.h>
+#if defined(__APPLE__)
+#include <TargetConditionals.h>
+#endif
 
 int RunCommand(anynode *p, const tchar_t *Cmd, const tchar_t *CmdParams, bool_t Silent)
 {
@@ -44,5 +47,13 @@ int RunCommand(anynode *p, const tchar_t *Cmd, const tchar_t *CmdParams, bool_t 
         if (Silent)
             strcat(Command," > /dev/null 2>/dev/null");
     }
+#if defined(__APPLE__) && !TARGET_OS_OSX
+    /* system() is unavailable on iOS/tvOS/watchOS/visionOS. RunCommand is
+       only called from mkclean's regression test harness, which isn't built
+       for these targets, so there is nothing here that actually runs. */
+    (void)Command;
+    return -1;
+#else
     return system(Command);
+#endif
 }
