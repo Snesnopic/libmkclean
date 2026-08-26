@@ -643,8 +643,16 @@ static ebml_element *CheckMatroskaHead(const ebml_element *Head, const ebml_pars
                 }
             }
         }
-        else if (EBML_ElementIsType(SubElement, EBML_getContextDocTypeReadVersion()))
+        else if (EBML_ElementIsType(SubElement, EBML_getContextDocTypeVersion()))
         {
+            // the profile/feature detection below (and everything that flows
+            // from it, including whether elements like CodecDelay/SeekPreRoll
+            // survive EBML_MasterCheckContext's profile filtering) needs the
+            // source's actual DocTypeVersion. DocTypeReadVersion is only the
+            // minimum a parser needs to read the file and is frequently lower
+            // -- reading it here previously understated the profile the
+            // source's own content actually used, silently dropping elements
+            // that were valid for it.
             if (EBML_ElementReadData(SubElement,Input,NULL,0,SCOPE_ALL_DATA,0)!=ERR_NONE)
             {
                 TextPrintf(StdErr,T("Error reading\r\n"));
@@ -652,7 +660,7 @@ static ebml_element *CheckMatroskaHead(const ebml_element *Head, const ebml_pars
             }
             else if (EBML_IntegerValue((ebml_integer*)SubElement) > MATROSKA_VERSION)
             {
-                TextPrintf(StdErr,T("EBML Read version %") TPRId64 T(" not supported\r\n"),EBML_IntegerValue((ebml_integer*)SubElement));
+                TextPrintf(StdErr,T("EBML version %") TPRId64 T(" not supported\r\n"),EBML_IntegerValue((ebml_integer*)SubElement));
                 break;
             }
             else
