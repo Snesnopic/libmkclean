@@ -1453,6 +1453,19 @@ int mkclean_optimize(int argc, const char *argv[])
     filepos_t TotalSize;
     array Alternate3DTracks;
 
+    // the run state is thread-local: clear what a previous run on this thread left behind
+    DocVersion = 1;
+    SrcReadVersion = 1;
+    SrcProfile = 0;
+    DstProfile = 0;
+    StdErr = NULL;
+    ExtraSizeDiff = 0;
+    Quiet = 0;
+    Unsafe = 0;
+    Live = 0;
+    TotalPhases = 2;
+    CurrentPhase = 1;
+
     // Core-C init phase
     ParserContext_Init(&p,NULL,NULL,NULL);
     Node_SetData(&p.Base.Base.Base,NODECONTEXT_PROJECT_VENDOR,TYPE_STRING,"Matroska");
