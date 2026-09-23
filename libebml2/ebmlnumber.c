@@ -66,6 +66,7 @@ static err_t ReadDataSignedInt(ebml_integer *Element, stream *Input, const ebml_
 {
     err_t Result;
     char Buffer[8];
+    uint64_t Value;
     int i;
 
     assert(Element->Base.DataSize <= 8);
@@ -85,15 +86,11 @@ static err_t ReadDataSignedInt(ebml_integer *Element, stream *Input, const ebml_
     if (Result != ERR_NONE)
         goto failed;
 
-    if (Buffer[0] & 0x80) // check wether it's a positive or negative value
-        Element->Value = -1;
-    else
-        Element->Value = 0;
+    // sign-extend from the first byte, then append the bytes unsigned
+    Value = (Buffer[0] & 0x80) ? ~(uint64_t)0 : 0;
 	for (i=0; i<(int)Element->Base.DataSize; i++)
-	{
-		Element->Value <<= 8;
-		Element->Value |= Buffer[i];
-	}
+		Value = (Value << 8) | (uint8_t)Buffer[i];
+    Element->Value = (int64_t)Value;
     Element->Base.bValueIsSet = 1;
 failed:
     return Result;
