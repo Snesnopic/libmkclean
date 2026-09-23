@@ -174,6 +174,8 @@ THREAD_LOCAL int CurrentPhase = 1;
 static bool_t MasterError(void *cookie, int type, const tchar_t *ClassName, const ebml_element *i)
 {
 	tchar_t IdString[MAXPATH];
+    if (Quiet)
+        return 1;
     if (type==MASTER_CHECK_PROFILE_INVALID)
     {
     	EBML_ElementGetName(i,IdString,TSIZEOF(IdString));
