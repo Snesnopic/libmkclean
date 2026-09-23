@@ -1447,7 +1447,7 @@ int mkclean_optimize(int argc, const char *argv[])
     size_t ExtraVoidSize = 0;
     timecode_t PrevTimecode;
     bool_t CuesChanged;
-	bool_t KeepCues = 0, Remux = 0, CuesCreated = 0, Optimize = 0, OptimizeVideo = 1, UnOptimize = 0, ClustersNeedRead = 0, Regression = 0;
+	bool_t KeepCues = 0, Remux = 0, CuesCreated = 0, Optimize = 0, OptimizeVideo = 1, UnOptimize = 0, ClustersNeedRead = 0, Regression = 0, KeepInfo = 0;
     int InputPathIndex = 1;
 	int64_t TimeCodeScale = 0, OldTimeCodeScale;
     size_t MaxTrackNum = 0;
@@ -1569,6 +1569,7 @@ int mkclean_optimize(int argc, const char *argv[])
 		else if (tcsisame_ascii(Path,T("--optimize"))) { Optimize = 1; OptimizeVideo = 1; InputPathIndex = i+1; }
 		else if (tcsisame_ascii(Path,T("--optimize_nv"))) { Optimize = 1; OptimizeVideo = 0; InputPathIndex = i+1; }
 		else if (tcsisame_ascii(Path,T("--regression"))) { Regression = 1; InputPathIndex = i+1; }
+		else if (tcsisame_ascii(Path,T("--keep-info"))) { KeepInfo = 1; InputPathIndex = i+1; }
 		else if (tcsisame_ascii(Path,T("--no-optimize"))) { UnOptimize = 1; InputPathIndex = i+1; }
 		else if (tcsisame_ascii(Path,T("--quiet"))) { Quiet = 1; InputPathIndex = i+1; }
 		else if (tcsisame_ascii(Path,T("--version"))) { ShowVersion = 1; InputPathIndex = i+1; }
@@ -1599,6 +1600,7 @@ int mkclean_optimize(int argc, const char *argv[])
 		    TextWrite(StdErr,T("  --optimize_nv use all possible optimization for the output file, except video tracks\r\n"));
 		    TextWrite(StdErr,T("  --no-optimize disable some optimization for the output file\r\n"));
 		    TextWrite(StdErr,T("  --regression  the output file is suitable for regression tests\r\n"));
+		    TextWrite(StdErr,T("  --keep-info   keep the original MuxingApp, WritingApp and DateUTC\r\n"));
             TextWrite(StdErr,T("  --alt-3d <t>  the track with ID <v> has alternate 3D fields (left first)\r\n"));
 		    TextWrite(StdErr,T("  --quiet       only output errors\r\n"));
             TextWrite(StdErr,T("  --version     show the version of ") PROJECT_NAME T("\r\n"));
@@ -1957,67 +1959,72 @@ int mkclean_optimize(int argc, const char *argv[])
 
     //  Compute the Segment Info size
     ReduceSize((ebml_element*)WSegmentInfo);
-    // change the library names & app name
-    stprintf_s(String,TSIZEOF(String),T("%s + %s"),Node_GetDataStr((node*)&p,CONTEXT_LIBEBML_VERSION),Node_GetDataStr((node*)&p,CONTEXT_LIBMATROSKA_VERSION));
-    LibName = (ebml_string*)EBML_MasterFindFirstElt(WSegmentInfo, MATROSKA_getContextMuxingApp(), 1, 0);
-    EBML_StringGet(LibName,Original,TSIZEOF(Original));
-    if (Regression)
-        EBML_UniStringSetValue(LibName,T("libebml2 + libmatroska2"));
-    else
-        EBML_UniStringSetValue(LibName,String);
-
-    AppName = (ebml_string*)EBML_MasterFindFirstElt(WSegmentInfo, MATROSKA_getContextWritingApp(), 1, 0);
-    EBML_StringGet(AppName,String,TSIZEOF(String));
-	ExtraSizeDiff = tcslen(String);
-    if (!tcsisame_ascii(String,Original)) // libavformat writes the same twice, we only need one
-    {
-		if (Original[0])
-			tcscat_s(Original,TSIZEOF(Original),T(" + "));
-        tcscat_s(Original,TSIZEOF(Original),String);
-    }
-    s = Original;
-    if (tcsnicmp_ascii(Original,T("mkclean "),8)==0)
-        s += 14;
-    if (Regression)
-    {
-        if (s[0])
-            stprintf_s(String,TSIZEOF(String),PROJECT_NAME T(" regression from %s"),s);
-        else
-            stprintf_s(String,TSIZEOF(String),PROJECT_NAME T(" regression"));
-    }
+    if (KeepInfo)
+        ExtraSizeDiff = 0;
     else
     {
-	    stprintf_s(String,TSIZEOF(String),PROJECT_NAME T(" ") PROJECT_VERSION);
-	    if (Remux || Optimize || Live || UnOptimize || ARRAYCOUNT(Alternate3DTracks, block_info*))
-		    tcscat_s(String,TSIZEOF(String),T(" "));
-	    if (Remux)
-		    tcscat_s(String,TSIZEOF(String),T("r"));
-	    if (Optimize)
-		    tcscat_s(String,TSIZEOF(String),T("o"));
-	    if (Live)
-		    tcscat_s(String,TSIZEOF(String),T("l"));
-	    if (UnOptimize)
-		    tcscat_s(String,TSIZEOF(String),T("u"));
-	    if (ARRAYCOUNT(Alternate3DTracks, block_info*))
-        {
-		    tcscat_s(String,TSIZEOF(String),T("3"));
-            Remux = 1;
-        }
-	    if (s[0])
-		    stcatprintf_s(String,TSIZEOF(String),T(" from %s"),s);
-    }
-    EBML_UniStringSetValue(AppName,String);
-	ExtraSizeDiff = tcslen(String) - ExtraSizeDiff + 2;
-
-	if (Regression || Remux || !EBML_MasterFindChild(WSegmentInfo, MATROSKA_getContextDateUTC()))
-	{
-		RLevel1 = (ebml_master*)EBML_MasterGetChild(WSegmentInfo, MATROSKA_getContextDateUTC());
+        // change the library names & app name
+        stprintf_s(String,TSIZEOF(String),T("%s + %s"),Node_GetDataStr((node*)&p,CONTEXT_LIBEBML_VERSION),Node_GetDataStr((node*)&p,CONTEXT_LIBMATROSKA_VERSION));
+        LibName = (ebml_string*)EBML_MasterFindFirstElt(WSegmentInfo, MATROSKA_getContextMuxingApp(), 1, 0);
+        EBML_StringGet(LibName,Original,TSIZEOF(Original));
         if (Regression)
-            EBML_DateSetDateTime((ebml_date*)RLevel1, 1);
+            EBML_UniStringSetValue(LibName,T("libebml2 + libmatroska2"));
         else
-		    EBML_DateSetDateTime((ebml_date*)RLevel1, GetTimeDate());
-		RLevel1 = NULL;
-	}
+            EBML_UniStringSetValue(LibName,String);
+
+        AppName = (ebml_string*)EBML_MasterFindFirstElt(WSegmentInfo, MATROSKA_getContextWritingApp(), 1, 0);
+        EBML_StringGet(AppName,String,TSIZEOF(String));
+		ExtraSizeDiff = tcslen(String);
+        if (!tcsisame_ascii(String,Original)) // libavformat writes the same twice, we only need one
+        {
+			if (Original[0])
+				tcscat_s(Original,TSIZEOF(Original),T(" + "));
+            tcscat_s(Original,TSIZEOF(Original),String);
+        }
+        s = Original;
+        if (tcsnicmp_ascii(Original,T("mkclean "),8)==0)
+            s += 14;
+        if (Regression)
+        {
+            if (s[0])
+                stprintf_s(String,TSIZEOF(String),PROJECT_NAME T(" regression from %s"),s);
+            else
+                stprintf_s(String,TSIZEOF(String),PROJECT_NAME T(" regression"));
+        }
+        else
+        {
+		    stprintf_s(String,TSIZEOF(String),PROJECT_NAME T(" ") PROJECT_VERSION);
+		    if (Remux || Optimize || Live || UnOptimize || ARRAYCOUNT(Alternate3DTracks, block_info*))
+			    tcscat_s(String,TSIZEOF(String),T(" "));
+		    if (Remux)
+			    tcscat_s(String,TSIZEOF(String),T("r"));
+		    if (Optimize)
+			    tcscat_s(String,TSIZEOF(String),T("o"));
+		    if (Live)
+			    tcscat_s(String,TSIZEOF(String),T("l"));
+		    if (UnOptimize)
+			    tcscat_s(String,TSIZEOF(String),T("u"));
+		    if (ARRAYCOUNT(Alternate3DTracks, block_info*))
+            {
+			    tcscat_s(String,TSIZEOF(String),T("3"));
+                Remux = 1;
+            }
+		    if (s[0])
+			    stcatprintf_s(String,TSIZEOF(String),T(" from %s"),s);
+        }
+        EBML_UniStringSetValue(AppName,String);
+		ExtraSizeDiff = tcslen(String) - ExtraSizeDiff + 2;
+
+		if (Regression || Remux || !EBML_MasterFindChild(WSegmentInfo, MATROSKA_getContextDateUTC()))
+		{
+			RLevel1 = (ebml_master*)EBML_MasterGetChild(WSegmentInfo, MATROSKA_getContextDateUTC());
+            if (Regression)
+                EBML_DateSetDateTime((ebml_date*)RLevel1, 1);
+            else
+			    EBML_DateSetDateTime((ebml_date*)RLevel1, GetTimeDate());
+			RLevel1 = NULL;
+		}
+    }
 
 	if (!Live)
 	{
