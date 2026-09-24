@@ -32,6 +32,7 @@ static err_t ReadDataInt(ebml_integer *Element, stream *Input, const ebml_parser
 {
     err_t Result;
     char Buffer[8];
+    uint64_t Value = 0;
     int i;
 
     assert(Element->Base.DataSize <= 8);
@@ -51,12 +52,9 @@ static err_t ReadDataInt(ebml_integer *Element, stream *Input, const ebml_parser
     if (Result != ERR_NONE)
         return Result;
 
-    Element->Value = 0;
 	for (i=0; i<(int)Element->Base.DataSize; i++)
-	{
-		Element->Value <<= 8;
-		Element->Value |= (uint8_t)Buffer[i];
-	}
+		Value = (Value << 8) | (uint8_t)Buffer[i];
+    Element->Value = (int64_t)Value;
     Element->Base.bValueIsSet = 1;
 failed:
     return Result;
