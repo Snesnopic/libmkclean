@@ -160,16 +160,18 @@ static void Delete(ebml_string *p)
 
 static filepos_t UpdateDataSize(ebml_string *Element, bool_t bWithDefault, bool_t bForceWithoutMandatory)
 {
+    // a mandatory string added without a default has no buffer
     if (EBML_ElementNeedsDataSizeUpdate(Element, bWithDefault))
-        Element->Base.DataSize = strlen(Element->Buffer);
+        Element->Base.DataSize = Element->Buffer ? strlen(Element->Buffer) : 0;
 
 	return INHERITED(Element,ebml_element_vmt,EBML_STRING_CLASS)->UpdateDataSize(Element, bWithDefault, bForceWithoutMandatory);
 }
 
 static filepos_t UpdateDataSizeUni(ebml_string *Element, bool_t bWithDefault, bool_t bForceWithoutMandatory)
 {
+    // a mandatory string added without a default has no buffer
     if (EBML_ElementNeedsDataSizeUpdate(Element, bWithDefault))
-        Element->Base.DataSize = strlen(Element->Buffer);
+        Element->Base.DataSize = Element->Buffer ? strlen(Element->Buffer) : 0;
 
 	return INHERITED(Element,ebml_element_vmt,EBML_UNISTRING_CLASS)->UpdateDataSize(Element, bWithDefault, bForceWithoutMandatory);
 }
@@ -198,7 +200,7 @@ static ebml_string *Copy(const ebml_string *Element, const void *Cookie)
     ebml_string *Result = (ebml_string*)EBML_ElementCreate(Element,Element->Base.Context,0,Cookie);
     if (Result)
     {
-        Result->Buffer = strdup(Element->Buffer);
+        Result->Buffer = Element->Buffer ? strdup(Element->Buffer) : NULL;
         Result->Base.bValueIsSet = Element->Base.bValueIsSet;
         Result->Base.DataSize = Element->Base.DataSize;
         Result->Base.ElementPosition = Element->Base.ElementPosition;
