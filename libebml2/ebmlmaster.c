@@ -592,10 +592,11 @@ static void RemoveChild(ebml_master* p,ebml_element* Child)
     INHERITED(p,nodetree_vmt,EBML_MASTER_CLASS)->RemoveChild(p,Child);
 }
 
-static void AddChild(ebml_master* p,ebml_element* Child,ebml_element* Before)
+// nodetree_vmt's AddChild returns err_t: a void override leaves SetParent reading whatever the register holds
+static err_t AddChild(ebml_master* p,ebml_element* Child,ebml_element* Before)
 {
     p->Base.bNeedDataSizeUpdate = 1;
-    INHERITED(p,nodetree_vmt,EBML_MASTER_CLASS)->AddChild(p,Child,Before);
+    return INHERITED(p,nodetree_vmt,EBML_MASTER_CLASS)->AddChild(p,Child,Before);
 }
 
 static bool_t ValidateSize(const ebml_element *p)
