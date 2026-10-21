@@ -52,6 +52,10 @@ NOINLINE bool_t Data_ReAlloc(uint8_t** a,size_t n)
     uint8_t* p = *a;
     size_t oldsize;
 
+    // the two top bits of the size hold flags, and the header has to fit too
+    if (n >= DATA_FLAG_MEMHEAP - sizeof(dataheaphead))
+        return 0;
+
     if (p)
     {
         if (!Data_Head(p)->Size) // const?
@@ -172,6 +176,9 @@ static size_t SizeAlign(size_t Total, size_t Align)
                 break;
     }
     --Align;
+    // a size this close to the limit would wrap around to a small one
+    if (Total > (size_t)-1 - Align)
+        return (size_t)-1;
 	return (Total + Align) & ~Align;
 }
 
