@@ -3065,6 +3065,7 @@ int mkclean_optimize(int argc, const char *argv[])
             ebml_element *Void = EBML_ElementCreate(RCues,EBML_getContextEbmlVoid(),1,NULL);
             EBML_VoidSetFullSize(Void, CuesSize - ClusterSize);
             EBML_ElementRender(Void,Output,0,0,1,NULL);
+            NodeDelete((node*)Void);
         }
         else
         {
