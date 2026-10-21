@@ -422,9 +422,9 @@ processCrc:
     }
 
     Element->Base.bValueIsSet = 1;
-    if (UpperEltFound>0) // move back to the upper element beginning so that the next loop can find it
+    // FindNextElement may count an upper level and still find nothing, e.g. in a truncated file
+    if (UpperEltFound>0 && SubElement!=NULL) // move back to the upper element beginning so that the next loop can find it
     {
-        assert(SubElement!=NULL);
         Stream_Seek(Input,SubElement->ElementPosition,SEEK_SET);
     }
     return ERR_NONE;
