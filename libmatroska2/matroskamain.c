@@ -577,7 +577,8 @@ timecode_t MATROSKA_ClusterTimecode(matroska_cluster *Cluster)
     {
         ebml_integer *Timecode = (ebml_integer*)EBML_MasterFindChild((ebml_master*)Cluster,MATROSKA_getContextTimestamp());
         if (Timecode)
-            Cluster->GlobalTimecode = EBML_IntegerValue(Timecode) * MATROSKA_SegmentInfoTimecodeScale(Cluster->ReadSegInfo);
+            // a damaged timestamp wraps around instead of overflowing
+            Cluster->GlobalTimecode = (timecode_t)((uint64_t)EBML_IntegerValue(Timecode) * (uint64_t)MATROSKA_SegmentInfoTimecodeScale(Cluster->ReadSegInfo));
     }
     return Cluster->GlobalTimecode;
 }
@@ -596,6 +597,9 @@ err_t MATROSKA_BlockSetTimecode(matroska_block *Block, timecode_t Timecode, time
 	int64_t InternalTimecode;
     assert(Node_IsPartOf(Block,MATROSKA_BLOCK_CLASS));
     assert(Timecode!=INVALID_TIMECODE_T);
+	// timestamps this far apart can't fit in a block anyway
+	if (ClusterTimecode < 0 ? Timecode > INT64_MAX + ClusterTimecode : Timecode < INT64_MIN + ClusterTimecode)
+		return ERR_INVALID_DATA;
 #if defined(CONFIG_EBML_WRITING)
 	InternalTimecode = Scale64(Timecode - ClusterTimecode,1,(int64_t)(MATROSKA_SegmentInfoTimecodeScale(Block->WriteSegInfo) * MATROSKA_TrackTimecodeScale(Block->WriteTrack)));
 #else
@@ -622,7 +626,7 @@ timecode_t MATROSKA_BlockTimecode(matroska_block *Block)
         Cluster = EBML_ElementParent(Cluster);
     if (!Cluster)
         return INVALID_TIMECODE_T;
-    Block->GlobalTimecode = MATROSKA_ClusterTimecode((matroska_cluster*)Cluster) + (timecode_t)(Block->LocalTimecode * MATROSKA_SegmentInfoTimecodeScale(Block->ReadSegInfo) * MATROSKA_TrackTimecodeScale(Block->ReadTrack));
+    Block->GlobalTimecode = (timecode_t)((uint64_t)MATROSKA_ClusterTimecode((matroska_cluster*)Cluster) + (uint64_t)(timecode_t)(Block->LocalTimecode * MATROSKA_SegmentInfoTimecodeScale(Block->ReadSegInfo) * MATROSKA_TrackTimecodeScale(Block->ReadTrack)));
     MATROSKA_BlockSetTimecode(Block, Block->GlobalTimecode, MATROSKA_ClusterTimecode((matroska_cluster*)Cluster));
     return Block->GlobalTimecode;
 }

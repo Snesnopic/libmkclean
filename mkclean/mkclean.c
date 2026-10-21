@@ -707,7 +707,7 @@ static bool_t WriteCluster(ebml_master *Cluster, stream *Output, stream *Input, 
         if (*PrevTimecode >= OrigTimecode)
         {
             TextPrintf(StdErr,T("The Cluster at position %") TPRId64 T(" has the same timecode %") TPRId64 T(" as the previous cluster %") TPRId64 T(", incrementing\r\n"), EBML_ElementPosition((ebml_element*)Cluster),*PrevTimecode,OrigTimecode);
-            MATROSKA_ClusterSetTimecode((matroska_cluster*)Cluster, *PrevTimecode + MATROSKA_ClusterTimecodeScale((matroska_cluster*)Cluster, 0));
+            MATROSKA_ClusterSetTimecode((matroska_cluster*)Cluster, (timecode_t)((uint64_t)*PrevTimecode + (uint64_t)MATROSKA_ClusterTimecodeScale((matroska_cluster*)Cluster, 0)));
             CuesChanged = 1;
         }
     }
