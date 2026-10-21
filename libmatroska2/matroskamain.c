@@ -1435,10 +1435,11 @@ static err_t ReadBlockData(matroska_block *Element, stream *Input, const ebml_pa
 		uint32_t LastBufferSize = (size_t)Element->Base.Base.DataSize - BlockHeadSize - 1; // 1 for number of frame
 		uint8_t FrameNum = _TempHead[0]; // number of frames in the lace - 1
 		// read the list of frame sizes
-		uint8_t Index;
+		unsigned int Index; // a lace holds up to 256 frames
 		int32_t FrameSize;
 		size_t SizeRead;
 		filepos_t SizeUnknown;
+		int64_t LaceTotal;
 
         Element->FirstFrameLocation++; // for the number of frame
 		ArrayResize(&Element->SizeList,sizeof(int32_t)*(FrameNum + 1),0);
@@ -1451,7 +1452,12 @@ static err_t ReadBlockData(matroska_block *Element, stream *Input, const ebml_pa
 				// get the size of the frame
 				FrameSize = 0;
 				do {
-					Result += Stream_Read(Input,_TempHead, 1, NULL);
+					// a damaged lace can run up to the end of the file
+					if (Stream_Read(Input,_TempHead, 1, NULL) != ERR_NONE)
+					{
+						Result = ERR_READ;
+						goto failed;
+					}
 					FrameSize += _TempHead[0];
 					LastBufferSize--;
 
@@ -1464,30 +1470,60 @@ static err_t ReadBlockData(matroska_block *Element, stream *Input, const ebml_pa
 			ARRAYBEGIN(Element->SizeList,int32_t)[Index] = LastBufferSize;
 			break;
 		case LACING_EBML:
-			SizeRead = LastBufferSize;
-            _tmpBuf = malloc(FrameNum*4);
-			cursor = _tmpBuf; /// \warning assume the mean size will be coded in less than 4 bytes
-			Result += Stream_Read(Input,cursor, FrameNum*4,NULL);
+		{
+			// the sizes take up to 8 bytes each and can't go past the block
+			const size_t BufSize = (size_t)FrameNum*8 < LastBufferSize ? (size_t)FrameNum*8 : LastBufferSize;
+			const uint8_t *BufEnd;
+			if (FrameNum == 0 || BufSize == 0)
+			{
+				Result = ERR_INVALID_DATA;
+				goto failed;
+			}
+            _tmpBuf = malloc(BufSize);
+			if (_tmpBuf == NULL)
+			{
+				Result = ERR_OUT_OF_MEMORY;
+				goto failed;
+			}
+			if (Stream_Read(Input,_tmpBuf,BufSize,NULL) != ERR_NONE)
+			{
+				free(_tmpBuf);
+				Result = ERR_READ;
+				goto failed;
+			}
+			cursor = _tmpBuf;
+			BufEnd = _tmpBuf + BufSize;
+			SizeRead = BufSize;
 			FrameSize = (int32_t)EBML_ReadCodedSizeValue(cursor, &SizeRead, &SizeUnknown);
 			ARRAYBEGIN(Element->SizeList,int32_t)[0] = FrameSize;
 			cursor += SizeRead;
 			LastBufferSize -= FrameSize + SizeRead;
 
-			for (Index=1; Index<FrameNum; Index++)
+			for (Index=1; SizeRead != 0 && Index<FrameNum; Index++)
             {
 				// get the size of the frame
-				SizeRead = LastBufferSize;
-				FrameSize += (int32_t)EBML_ReadCodedSizeSignedValue(cursor, &SizeRead, &SizeUnknown);
+				SizeRead = BufEnd - cursor;
+				if (SizeRead == 0)
+					break;
+				// damaged deltas wrap around, and the size check below rejects them
+				FrameSize = (int32_t)((uint32_t)FrameSize + (uint32_t)EBML_ReadCodedSizeSignedValue(cursor, &SizeRead, &SizeUnknown));
 				ARRAYBEGIN(Element->SizeList,int32_t)[Index] = FrameSize;
 				cursor += SizeRead;
 				LastBufferSize -= FrameSize + SizeRead;
 			}
 
 			Element->FirstFrameLocation += cursor - _tmpBuf;
+			free(_tmpBuf);
+			if (SizeRead == 0)
+			{
+				// a size didn't fit in what's left of the block
+				Result = ERR_INVALID_DATA;
+				goto failed;
+			}
 
 			ARRAYBEGIN(Element->SizeList,int32_t)[Index] = LastBufferSize;
-			free(_tmpBuf);
 			break;
+		}
 		case LACING_FIXED:
 			for (Index=0; Index<=FrameNum; Index++)
 				// get the size of the frame
@@ -1495,6 +1531,16 @@ static err_t ReadBlockData(matroska_block *Element, stream *Input, const ebml_pa
 			break;
 		default: // other lacing not supported
 			assert(0);
+		}
+
+		// sizes from a damaged lace can add up to more, or less, than the block holds
+		LaceTotal = 0;
+		for (Index=0; Index<=FrameNum && ARRAYBEGIN(Element->SizeList,int32_t)[Index] >= 0; Index++)
+			LaceTotal += ARRAYBEGIN(Element->SizeList,int32_t)[Index];
+		if (Index<=FrameNum || LaceTotal != EBML_ElementPositionEnd((ebml_element*)Element) - Element->FirstFrameLocation)
+		{
+			Result = ERR_INVALID_DATA;
+			goto failed;
 		}
 	}
 
