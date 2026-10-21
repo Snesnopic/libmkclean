@@ -409,6 +409,12 @@ static err_t ReadData(ebml_master *Element, stream *Input, const ebml_parser_con
 			
 			SubElement = EBML_FindNextElement(ReadStream,&Context,&UpperEltFound,AllowDummyElt);
 		}
+        // a child running past this element's end isn't read, and nothing holds it
+        if (SubElement && UpperEltFound<=0)
+        {
+            NodeDelete((node*)SubElement);
+            SubElement = NULL;
+        }
 	}
 processCrc:
     if (CRCData!=NULL)
@@ -426,6 +432,8 @@ processCrc:
     if (UpperEltFound>0 && SubElement!=NULL) // move back to the upper element beginning so that the next loop can find it
     {
         Stream_Seek(Input,SubElement->ElementPosition,SEEK_SET);
+        // the next loop reads it again: nothing holds this copy
+        NodeDelete((node*)SubElement);
     }
     return ERR_NONE;
 }
