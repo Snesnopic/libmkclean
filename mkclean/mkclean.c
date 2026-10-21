@@ -1416,13 +1416,15 @@ static void WriteJunk(stream *Output, size_t Amount)
 }
 
 
-int mkclean_optimize(int argc, const char *argv[])
+// with a buffer, the messages of the run go there, cut when it's full, instead of to stderr
+int mkclean_optimize_ex(int argc, const char *argv[], char *Messages, size_t MessagesSize)
 {
     int i,Result = 0;
     int ShowUsage = 0;
     int ShowVersion = 0;
     parsercontext p;
     textwriter _StdErr;
+    stream *MessageStream = NULL;
     stream *Input = NULL,*Output = NULL;
     tchar_t Path[MAXPATHFULL];
     tchar_t String[MAXLINE],Original[MAXLINE],*s;
@@ -1480,7 +1482,14 @@ int mkclean_optimize(int argc, const char *argv[])
 
     StdErr = &_StdErr;
     memset(StdErr,0,sizeof(_StdErr));
-    StdErr->Stream = (stream*)NodeSingleton(&p,STDERR_ID);
+    if (Messages && MessagesSize)
+    {
+        Messages[0] = 0;
+        MessageStream = (stream*)NodeCreate(&p,MEMSTREAM_CLASS);
+        if (MessageStream)
+            Node_Set(MessageStream,MEMSTREAM_DATA,Messages,MessagesSize-1);
+    }
+    StdErr->Stream = MessageStream ? MessageStream : (stream*)NodeSingleton(&p,STDERR_ID);
 
 #if defined(TARGET_WIN) && defined(UNICODE)
     Node_FromWcs(&p,Path,TSIZEOF(Path),argv[0]);
@@ -3157,6 +3166,13 @@ exit:
     if (Result<0 && Path[0])
         FileErase((nodecontext*)&p,Path,1,0);
 
+    if (MessageStream)
+    {
+        Messages[(size_t)Stream_Seek(MessageStream,0,SEEK_CUR)] = 0;
+        NodeDelete((node*)MessageStream);
+    }
+    StdErr = NULL;
+
     // EBML & Matroska ending
     MATROSKA_Done(&p);
 
@@ -3165,4 +3181,9 @@ exit:
     ParserContext_Done(&p);
 
     return Result;
+}
+
+int mkclean_optimize(int argc, const char *argv[])
+{
+    return mkclean_optimize_ex(argc, argv, NULL, 0);
 }
