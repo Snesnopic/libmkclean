@@ -289,6 +289,17 @@ static void PostCreate(ebml_master *Element, bool_t SetDefault)
     }
 }
 
+// an unknown-size element ends where the next one starts: put that one back for the loop to find
+static void SkipChildData(ebml_element *SubElement, stream *Input, const ebml_parser_context *Context, bool_t AllowDummyElt)
+{
+    ebml_element *Next = EBML_ElementSkipData(SubElement,Input,Context,NULL,AllowDummyElt);
+    if (Next)
+    {
+        Stream_Seek(Input,Next->ElementPosition,SEEK_SET);
+        NodeDelete((node*)Next);
+    }
+}
+
 static err_t ReadData(ebml_master *Element, stream *Input, const ebml_parser_context *ParserContext, bool_t AllowDummyElt, int Scope, size_t DepthCheckCRC)
 {
     int UpperEltFound = 0;
@@ -322,7 +333,7 @@ static err_t ReadData(ebml_master *Element, stream *Input, const ebml_parser_con
         {
 			if (!AllowDummyElt && EBML_ElementIsDummy(SubElement)) {
                 // TODO: this should never happen
-                EBML_ElementSkipData(SubElement,ReadStream,&Context,NULL,AllowDummyElt);
+                SkipChildData(SubElement,ReadStream,&Context,AllowDummyElt);
 				NodeDelete((node*)SubElement); // forget this unknown element
                 SubElement = NULL;
 			}
@@ -379,7 +390,7 @@ static err_t ReadData(ebml_master *Element, stream *Input, const ebml_parser_con
                     if (CRCElement != (ebml_crc*)SubElement)
                         EBML_MasterAppend(Element,SubElement);
 			        // just in case
-                    EBML_ElementSkipData(SubElement,ReadStream,&Context,NULL,AllowDummyElt);
+                    SkipChildData(SubElement,ReadStream,&Context,AllowDummyElt);
                 }
                 else
                 {
