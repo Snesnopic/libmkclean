@@ -52,6 +52,9 @@ static err_t MemRead(memstream* p,void* Data,size_t Size,size_t* Readed)
 
 static err_t MemWrite(memstream* p, const void* Data, size_t Size, size_t* Written)
 {
+    size_t written;
+    if (!Written)
+        Written = &written;
     *Written = 0;
     if (Size + p->Pos > p->Size)
         return ERR_INVALID_PARAM;
