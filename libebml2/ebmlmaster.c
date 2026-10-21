@@ -73,7 +73,7 @@ ebml_element *EBML_MasterFindFirstElt(ebml_master *Element, const ebml_context *
     ebml_element *i;
     for (i=EBML_MasterChildren(Element);i;i=EBML_MasterNext(i))
     {
-        if (i->Context->Id == Context->Id)
+        if (EBML_ElementIsType(i, Context))
             break;
     }
 
@@ -91,7 +91,7 @@ ebml_element *EBML_MasterFindNextElt(ebml_master *Element, const ebml_element *C
 
     for (i=EBML_MasterNext(Current);i;i=EBML_MasterNext(i))
     {
-        if (i->Context->Id == Current->Context->Id)
+        if (EBML_ElementIsType(i, Current->Context))
             break;
     }
 

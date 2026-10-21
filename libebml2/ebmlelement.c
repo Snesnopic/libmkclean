@@ -166,7 +166,8 @@ void EBML_ElementSetSizeLength(ebml_element *Element, uint8_t SizeLength)
 
 bool_t EBML_ElementIsType(const ebml_element *Element, const ebml_context *Context)
 {
-    return Element->Context->Id == Context->Id;
+    // a dummy keeps the id of the element it stands for, but not its class or layout
+    return Element->Context->Id == Context->Id && Element->Context->Class == Context->Class;
 }
 
 fourcc_t EBML_ElementClassID(const ebml_element *Element)
