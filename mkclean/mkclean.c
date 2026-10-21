@@ -261,6 +261,8 @@ static bool_t ReadClusterData(ebml_master *Cluster, stream *Input)
                     if ((Result = MATROSKA_BlockReadData((matroska_block*)GBlock, Input))!=ERR_NONE)
                     {
                         Changed = 1;
+                        // a cue may hold the block too: releasing it alone would leave it in the cluster, unread
+                        EBML_MasterRemove(Cluster,Block);
                         NodeDelete((node*)Block);
                     }
                     break;
@@ -272,6 +274,7 @@ static bool_t ReadClusterData(ebml_master *Cluster, stream *Input)
             if ((Result = MATROSKA_BlockReadData((matroska_block*)Block, Input))!=ERR_NONE)
             {
                 Changed = 1;
+                EBML_MasterRemove(Cluster,Block);
                 NodeDelete((node*)Block);
             }
         }
