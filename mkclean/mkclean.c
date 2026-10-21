@@ -1858,6 +1858,15 @@ int mkclean_optimize(int argc, const char *argv[])
 		{
 			if (EBML_ElementIsType(Elt, MATROSKA_getContextTrackEntry()))
 			{
+                // only header removal can be rewritten exactly: zlib depends on the build, bzlib and lzo aren't supported
+                Result = MATROSKA_TrackGetBlockCompression((matroska_trackentry*)Elt);
+                if (Result != MATROSKA_BLOCK_COMPR_NONE && Result != MATROSKA_BLOCK_COMPR_HEADER)
+                {
+                    TextWrite(StdErr,T("Tracks compressed with zlib, bzlib or lzo are left as they are\r\n"));
+                    Result = -47;
+                    goto exit;
+                }
+                Result = 0;
                 EBML_MasterUseChecksum((ebml_master*)Elt,!Unsafe);
 				Elt2 = EBML_MasterFindChild((ebml_master*)Elt,MATROSKA_getContextTrackNumber());
 				if (Elt2 && (size_t)EBML_IntegerValue((ebml_integer*)Elt2) > MaxTrackNum)
@@ -2725,10 +2734,7 @@ int mkclean_optimize(int argc, const char *argv[])
                 {
                     Elt = EBML_MasterFindFirstElt(RLevel1,MATROSKA_getContextCodecID(),1,0);
                     EBML_StringGet((ebml_string*)Elt,CodecID,TSIZEOF(CodecID));
-                    if (tcsisame_ascii(CodecID,T("S_USF")) || tcsisame_ascii(CodecID,T("S_VOBSUB")) || tcsisame_ascii(CodecID,T("S_HDMV/PGS")) || tcsisame_ascii(CodecID,T("B_VOBBTN"))
-                        || tcsisame_ascii(CodecID,T("V_UNCOMPRESSED"))|| tcsstr(CodecID,T("A_PCM"))==CodecID)
-                        encoding = MATROSKA_BLOCK_COMPR_ZLIB;
-                    else
+                    // zlib-compressed blocks came out unreadable (PCM, PGS, VobSub...) and many players can't decode them
                     {
                         // don't keep the zlib compression on compressed codecs
                         //encoding = MATROSKA_TrackGetBlockCompression((matroska_trackentry*)RLevel1);
@@ -2756,8 +2762,8 @@ int mkclean_optimize(int argc, const char *argv[])
                     }
                 }
 
-                // see if we can add CodecPrivate too
-                if ((Optimize || encoding != MATROSKA_BLOCK_COMPR_NONE) && encoding != MATROSKA_BLOCK_COMPR_HEADER && zlib_scope != MATROSKA_COMPR_SCOPE_PRIVATE)
+                // see if we can add CodecPrivate too; never, for the same reason as the blocks
+                if (0)
                 {
                     if (CodecPrivate!=NULL)
                     {
