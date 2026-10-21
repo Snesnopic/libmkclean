@@ -194,7 +194,8 @@ static bool_t MasterError(void *cookie, int type, const tchar_t *ClassName, cons
     return 1;
 }
 
-static void ReduceSize(ebml_element *Element)
+// returns 1 when the element should go; only its children are deleted here, the caller still holds the element
+static bool_t ReduceSize(ebml_element *Element)
 {
     EBML_ElementSetSizeLength(Element, 0); // reset
     if (Node_IsPartOf(Element,EBML_MASTER_CLASS))
@@ -205,42 +206,27 @@ static void ReduceSize(ebml_element *Element)
             EBML_MasterUseChecksum((ebml_master*)Element,0);
 
         if (EBML_ElementIsType(Element, MATROSKA_getContextBlockGroup()) && !EBML_MasterCheckMandatory((ebml_master*)Element, 0))
-        {
-            NodeDelete((node*)Element);
-            return;
-        }
+            return 1;
 
         for (i=EBML_MasterChildren(Element);i;i=j)
 		{
 			j = EBML_MasterNext(i);
-			if (Node_IsPartOf(i, EBML_VOID_CLASS))
+			if (Node_IsPartOf(i, EBML_VOID_CLASS) || Node_IsPartOf(i, EBML_DUMMY_ID) || EBML_ElementIsType(i, EBML_getContextEbmlCrc32()) || ReduceSize(i))
 			{
+				// a cue may hold a reference too: leave the tree before letting go of ours
+				EBML_MasterRemove((ebml_master*)Element,i);
 				NodeDelete((node*)i);
-				continue;
 			}
-			else if (Node_IsPartOf(i, EBML_DUMMY_ID))
-			{
-				NodeDelete((node*)i);
-				continue;
-			}
-			else if (EBML_ElementIsType(i, EBML_getContextEbmlCrc32()))
-			{
-				NodeDelete((node*)i);
-				continue;
-			}
-            ReduceSize(i);
 		}
 
         if (!EBML_MasterChildren(Element) && !EBML_MasterCheckMandatory((ebml_master*)Element, 0))
-        {
-            NodeDelete((node*)Element);
-            return;
-        }
+            return 1;
 
         EBML_MasterAddMandatory((ebml_master*)Element,1);
 
         EBML_MasterCheckContext((ebml_master*)Element, DstProfile, MasterError, Element);
 	}
+    return 0;
 }
 
 static bool_t ReadClusterData(ebml_master *Cluster, stream *Input)
@@ -471,7 +457,7 @@ static matroska_cluster **LinkCueCluster(matroska_cuepoint *Cue, array *Clusters
 
 static int LinkClusters(array *Clusters, ebml_master *RSegmentInfo, ebml_master *Tracks, int dstProfile, array *WTracks, timecode_t Offset)
 {
-    matroska_cluster **Cluster;
+    matroska_cluster **Cluster, **Kept;
 	ebml_element *Block, *GBlock, *BlockTrack, *Type;
     ebml_integer *Time;
     int BlockNum;
@@ -493,7 +479,7 @@ static int LinkClusters(array *Clusters, ebml_master *RSegmentInfo, ebml_master 
 	}
 
 	// link each Block/SimpleBlock with its Track and SegmentInfo
-	for (Cluster=ARRAYBEGIN(*Clusters,matroska_cluster*);Cluster!=ARRAYEND(*Clusters,matroska_cluster*);++Cluster)
+	for (Cluster=Kept=ARRAYBEGIN(*Clusters,matroska_cluster*);Cluster!=ARRAYEND(*Clusters,matroska_cluster*);++Cluster)
 	{
         if (Offset != INVALID_TIMECODE_T)
         {
@@ -502,8 +488,13 @@ static int LinkClusters(array *Clusters, ebml_master *RSegmentInfo, ebml_master 
                 EBML_IntegerSetValue(Time, Offset + EBML_IntegerValue(Time));
         }
 		MATROSKA_LinkClusterBlocks(*Cluster, RSegmentInfo, Tracks, 0);
-		ReduceSize((ebml_element*)*Cluster);
+		// a Cluster left with nothing in it goes, and out of the list too
+		if (ReduceSize((ebml_element*)*Cluster))
+			NodeDelete((node*)*Cluster);
+		else
+			*Kept++ = *Cluster;
 	}
+	ArrayShrink(Clusters, (Cluster - Kept) * sizeof(matroska_cluster*));
 
     // mark all the audio/subtitle tracks as keyframes
 	for (Cluster=ARRAYBEGIN(*Clusters,matroska_cluster*);Cluster!=ARRAYEND(*Clusters,matroska_cluster*);++Cluster)
