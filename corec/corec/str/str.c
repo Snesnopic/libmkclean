@@ -221,7 +221,7 @@ void vstprintf_s(tchar_t* Out,size_t OutLen,const tchar_t* Mask,va_list Arg)
 	const tchar_t *In;
 	const char *InA;
 	size_t n;
-    int64_t lvs,_lvs,ww;
+    int64_t lvs,_lvs;
 
 	while (OutLen>1 && *Mask)
 	{
@@ -294,8 +294,13 @@ void vstprintf_s(tchar_t* Out,size_t OutLen,const tchar_t* Mask,va_list Arg)
 			case 'i':
 			case 'X':
 			case 'x':
+            {
+                // 64-bit values need the 64-bit divisors: 10^19 and 16^15
+                uint64_t uv, uw;
                 if (Long)
 				    vl = va_arg(Arg,int64_t);
+                else if (*Mask=='x' || *Mask=='X' || Unsigned)
+				    vl = (unsigned int)va_arg(Arg,int);
                 else
 				    vl = va_arg(Arg,int);
 
@@ -303,34 +308,31 @@ void vstprintf_s(tchar_t* Out,size_t OutLen,const tchar_t* Mask,va_list Arg)
 				{
 					Unsigned = 1;
 					q = 16;
-					ww = 0x10000000;
+					uw = ULL(0x1000000000000000);
 				}
 				else
 				{
 					q = 10;
-					ww = 100000000000;
+					uw = ULL(10000000000000000000);
 				}
 
 				Sign = vl<0 && !Unsigned;
+				uv = Sign ? (uint64_t)0 - (uint64_t)vl : (uint64_t)vl;
 				if (Sign)
-				{
-					vl=-vl;
 					--Width;
-				}
 
 				w0 = 1;
 				for (;Width>1;--Width)
 					w0 *= q;
 
-				v = vl;
-				while (vl<ww && ww>w0)
-					ww/=q;
+				while (uv<uw && uw>w0)
+					uw/=q;
 
-				while (ww>0)
+				while (uw>0)
 				{
-					unsigned int i = (unsigned int)(vl/ww); // between 0 and q-1
-					vl-=i*ww;
-					if (OutLen>1 && Sign && (ww==1 || ZeroFill || i>0))
+					unsigned int i = (unsigned int)(uv/uw); // between 0 and q-1
+					uv-=i*uw;
+					if (OutLen>1 && Sign && (uw==1 || ZeroFill || i>0))
 					{
 						*(Out++) = '-';
 						--OutLen;
@@ -338,7 +340,7 @@ void vstprintf_s(tchar_t* Out,size_t OutLen,const tchar_t* Mask,va_list Arg)
 					}
 					if (OutLen>1)
 					{
-						if (i==0 && !ZeroFill && ww!=1)
+						if (i==0 && !ZeroFill && uw!=1)
 							i = ' ';
 						else
 						{
@@ -356,10 +358,11 @@ void vstprintf_s(tchar_t* Out,size_t OutLen,const tchar_t* Mask,va_list Arg)
 						*(Out++) = (tchar_t)i;
 						--OutLen;
 					}
-					ww/=q;
+					uw/=q;
 				}
 
 				break;
+            }
 
 			case 'c':
 				Width -= 1;
