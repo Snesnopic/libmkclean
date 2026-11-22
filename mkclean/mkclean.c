@@ -1416,6 +1416,16 @@ static void WriteJunk(stream *Output, size_t Amount)
 }
 
 
+// argv holds utf-8 on windows and apple platforms, and the file system's own bytes elsewhere
+static void FromArgument(parsercontext *p, tchar_t *Out, size_t OutLen, const char *Arg)
+{
+#if (defined(TARGET_WIN) && defined(UNICODE)) || defined(TARGET_OSX)
+    Node_FromUTF8(p,Out,OutLen,Arg);
+#else
+    Node_FromStr(p,Out,OutLen,Arg);
+#endif
+}
+
 // with a buffer, the messages of the run go there, cut when it's full, instead of to stderr
 int mkclean_optimize_ex(int argc, const char *argv[], char *Messages, size_t MessagesSize)
 {
@@ -1490,12 +1500,13 @@ int mkclean_optimize_ex(int argc, const char *argv[], char *Messages, size_t Mes
             Node_Set(MessageStream,MEMSTREAM_DATA,Messages,MessagesSize-1);
     }
     StdErr->Stream = MessageStream ? MessageStream : (stream*)NodeSingleton(&p,STDERR_ID);
-
 #if defined(TARGET_WIN) && defined(UNICODE)
-    Node_FromWcs(&p,Path,TSIZEOF(Path),argv[0]);
-#else
-    Node_FromStr(&p,Path,TSIZEOF(Path),argv[0]);
+    // the caller's buffer gets utf-8, like the arguments
+    if (MessageStream)
+        StdErr->CC = p.ToUTF8;
 #endif
+
+    FromArgument(&p,Path,TSIZEOF(Path),argv[0]);
     SplitPath(Path,NULL,0,String,TSIZEOF(String),NULL,0);
     UnOptimize = tcsisame_ascii(String,T("mkWDclean"));
     if (UnOptimize)
@@ -1504,21 +1515,13 @@ int mkclean_optimize_ex(int argc, const char *argv[], char *Messages, size_t Mes
 
 	for (i=1;i<argc;++i)
 	{
-#if defined(TARGET_WIN) && defined(UNICODE)
-	    Node_FromWcs(&p,Path,TSIZEOF(Path),argv[i]);
-#else
-	    Node_FromStr(&p,Path,TSIZEOF(Path),argv[i]);
-#endif
+	    FromArgument(&p,Path,TSIZEOF(Path),argv[i]);
 		if (tcsisame_ascii(Path,T("--keep-cues"))) { KeepCues = 1; InputPathIndex = i+1; }
 		else if (tcsisame_ascii(Path,T("--remux"))) { Remux = 1; InputPathIndex = i+1; }
 		else if (tcsisame_ascii(Path,T("--live"))) { Live = 1; InputPathIndex = i+1; }
 		else if (tcsisame_ascii(Path,T("--doctype")) && i+1<argc-1)
 		{
-#if defined(TARGET_WIN) && defined(UNICODE)
-		    Node_FromWcs(&p,Path,TSIZEOF(Path),argv[++i]);
-#else
-		    Node_FromStr(&p,Path,TSIZEOF(Path),argv[++i]);
-#endif
+		    FromArgument(&p,Path,TSIZEOF(Path),argv[++i]);
 			if (tcsisame_ascii(Path,T("1")))
 				DstProfile = PROFILE_MATROSKA_V1;
 			else if (tcsisame_ascii(Path,T("2")))
@@ -1542,22 +1545,14 @@ int mkclean_optimize_ex(int argc, const char *argv[], char *Messages, size_t Mes
 		}
 		else if (tcsisame_ascii(Path,T("--timecodescale")) && i+1<argc-1)
 		{
-#if defined(TARGET_WIN) && defined(UNICODE)
-		    Node_FromWcs(&p,Path,TSIZEOF(Path),argv[++i]);
-#else
-		    Node_FromStr(&p,Path,TSIZEOF(Path),argv[++i]);
-#endif
+		    FromArgument(&p,Path,TSIZEOF(Path),argv[++i]);
 			TimeCodeScale = StringToInt(Path,0);
 			InputPathIndex = i+1;
 		}
 		else if (tcsisame_ascii(Path,T("--alt-3d")) && i+1<argc-1)
 		{
             size_t TrackId;
-#if defined(TARGET_WIN) && defined(UNICODE)
-		    Node_FromWcs(&p,Path,TSIZEOF(Path),argv[++i]);
-#else
-		    Node_FromStr(&p,Path,TSIZEOF(Path),argv[++i]);
-#endif
+		    FromArgument(&p,Path,TSIZEOF(Path),argv[++i]);
             TrackId = StringToInt(Path,0);
             if (ARRAYCOUNT(Alternate3DTracks, block_info*) < (TrackId+1))
             {
@@ -1614,11 +1609,7 @@ int mkclean_optimize_ex(int argc, const char *argv[], char *Messages, size_t Mes
         goto exit;
     }
 
-#if defined(TARGET_WIN) && defined(UNICODE)
-    Node_FromWcs(&p,Path,TSIZEOF(Path),argv[InputPathIndex]);
-#else
-    Node_FromStr(&p,Path,TSIZEOF(Path),argv[InputPathIndex]);
-#endif
+    FromArgument(&p,Path,TSIZEOF(Path),argv[InputPathIndex]);
     Input = StreamOpen(&p,Path,SFLAG_RDONLY/*|SFLAG_BUFFERED*/);
     if (!Input)
     {
@@ -1648,11 +1639,7 @@ int mkclean_optimize_ex(int argc, const char *argv[], char *Messages, size_t Mes
             stcatprintf_s(Path,TSIZEOF(Path),T("clean.%s"),String);
     }
     else
-#if defined(TARGET_WIN) && defined(UNICODE)
-        Node_FromWcs(&p,Path,TSIZEOF(Path),argv[argc-1]);
-#else
-        Node_FromStr(&p,Path,TSIZEOF(Path),argv[argc-1]);
-#endif
+        FromArgument(&p,Path,TSIZEOF(Path),argv[argc-1]);
     Output = StreamOpen(&p,Path,SFLAG_WRONLY|SFLAG_CREATE);
     if (!Output)
     {
